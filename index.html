@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargando Menú...</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" id="meta-theme-color" content="#d63031">
+    <link id="manifest-placeholder" rel="manifest">
+
+    <style>
+        :root {
+            --primary: #ff4757;
+            --secondary: #ffa502;
+            --dark: #2f3542;
+            --light: #f1f2f6;
+            --green: #2ed573;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            scroll-behavior: smooth;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            padding-bottom: 50px; 
+            padding-top: 195px;   
+        }
+
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #ffffff;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2f3542;
+            overflow-y: auto;
+        }
+
+        .fixed-header-container {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            background-color: var(--dark);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        header {
+            color: white;
+            text-align: center;
+            padding: 15px 20px 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .logo-img {
+            max-width: 65px;
+            height: auto;
+            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3));
+        }
+
+        header h1 { font-size: 1.4rem; }
+
+        .status {
+            display: inline-block;
+            background-color: var(--green);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+
+        .categories-nav {
+            background-color: #222f3e;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-bottom: 4px solid var(--primary);
+            overflow-x: auto;
+        }
+
+        .cat-btn {
+            background: none; border: none;
+            color: #c8d6e5;
+            font-size: 0.85rem; font-weight: bold;
+            cursor: pointer;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 2px;
+            text-decoration: none;
+        }
+
+        .cat-btn span { font-size: 1.2rem; }
+        .cat-btn:active, .cat-btn:focus { color: var(--secondary); }
+
+        .container {
+            max-width: 600px;
+            margin: 10px auto;
+            padding: 0 15px;
+        }
+
+        .section-title {
+            margin: 30px 0 12px 0;
+            color: var(--dark);
+            border-left: 5px solid var(--secondary);
+            padding-left: 10px;
+            font-size: 1.3rem;
+            scroll-margin-top: 210px; 
+        }
+
+        .menu-item {
+            background: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .menu-item:active {
+            transform: scale(0.99);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+        }
+
+        .item-info { flex: 1; padding-right: 15px; }
+
+        .item-title-row {
+            display: flex; align-items: center;
+            gap: 8px; margin-bottom: 4px;
+        }
+
+        .item-info h3 { font-size: 1.05rem; color: #1e272e; }
+
+        .badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+        }
+        .badge-hot { background-color: var(--primary); }
+
+        .item-info p {
+            font-size: 0.85rem; color: #57606f;
+            margin-bottom: 6px; line-height: 1.3;
+        }
+
+        .price { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
+
+        .item-actions { display: flex; align-items: center; justify-content: center; min-width: 45px; }
+
+        .btn-add-circle {
+            background-color: var(--green);
+            color: white; border: none;
+            width: 40px; height: 40px;
+            border-radius: 50%; cursor: pointer;
+            font-weight: bold; font-size: 1.4rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 3px 6px rgba(46, 213, 115, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-add-circle:active { transform: scale(0.85); }
+
+        .quantity-selector {
+            display: none; align-items: center;
+            background-color: var(--primary);
+            border-radius: 20px; padding: 4px;
+            box-shadow: 0 3px 6px rgba(255, 71, 87, 0.3);
+        }
+
+        .quantity-selector button {
+            background: white; color: var(--primary);
+            border: none; width: 28px; height: 28px;
+            border-radius: 50%; font-weight: bold;
+            font-size: 1.1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .quantity-selector button:active { transform: scale(0.9); }
+
+        .quantity-value { color: white; font-weight: bold; font-size: 1rem; min-width: 25px; text-align: center; }
+
+        .cart-section, .form-section {
+            background: white; padding: 20px;
+            border-radius: 12px; margin-top: 25px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+        }
+
+        .cart-item {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 12px 0;
+            border-bottom: 1px solid #f1f2f6;
+        }
+
+        .cart-item-controls button {
+            padding: 4px 10px; font-weight: bold;
+            border: 1px solid #ced6e0; background-color: white;
+            border-radius: 4px; cursor: pointer;
+        }
+
+        .cart-total {
+            text-align: right; font-size: 1.25rem;
+            font-weight: bold; margin-top: 18px; color: var(--dark);
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 12px;
+            border: 1px solid #ced6e0; border-radius: 6px;
+            font-size: 1rem; background-color: #fafafa;
+        }
+
+        .btn-submit {
+            background-color: #25D366; color: white;
+            border: none; width: 100%; padding: 16px;
+            border-radius: 6px; font-size: 1.1rem;
+            font-weight: bold; cursor: pointer;
+            margin-top: 10px; box-shadow: 0 4px 8px rgba(37, 211, 102, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">Cargando la carta...</div>
+
+    <div class="fixed-header-container">
+        <header>
+            <img src="" alt="Logo" class="logo-img" id="biz-logo">
+            <div>
+                <h1 id="biz-name">Cargando...</h1>
+                <div class="status" id="biz-status">...</div>
+            </div>
+        </header>
+
+        <nav class="categories-nav" id="dynamic-nav">
+            <!-- Cargado Dinámicamente -->
+        </nav>
+    </div>
+
+    <div class="container" id="menu-container">
+         <!-- Cargado Dinámicamente -->
+    </div>
+
+    <div class="container">
+        <div class="cart-section" id="seccion-carrito">
+            <h2>Tu Pedido</h2>
+            <div id="carrito-vacio" style="color: #747d8c; font-style: italic; margin-top:10px;">No has agregado productos aún.</div>
+            <div id="lista-carrito"></div>
+            <div class="cart-total">Total a pagar: $<span id="total-pago">0.00</span></div>
+        </div>
+
+        <div class="form-section" id="seccion-formulario">
+            <h2>Datos de Entrega</h2>
+            <form id="form-pedido">
+                <div class="form-group">
+                    <label for="nombre">Nombre Completo:</label>
+                    <input type="text" id="nombre" required placeholder="Ej. Juan Pérez">
+                </div>
+                <div class="form-group">
+                    <label for="direccion">Dirección Exacta y Referencia:</label>
+                    <textarea id="direccion" rows="3" required placeholder="Ej. Calle 4, Casa #12, frente al parque"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="pago">Método de Pago:</label>
+                    <select id="pago" required>
+                        <option value="Efectivo (USD)">Efectivo (USD)</option>
+                        <option value="Pago Móvil / Transferencia">Pago Móvil / Transferencia</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notas">Notas Especiales (Opcional):</label>
+                    <input type="text" id="notas" placeholder="Ej. Sin cebolla / Salsas aparte">
+                </div>
+                <button type="submit" class="btn-submit">🚀 Enviar Pedido Directo a WhatsApp</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN OFICIAL DE SQLITE CLOUD WEBLITE
+        const SQLITE_CLOUD_URL = 'https://czz5zqwydk.sqlite.cloud/v2/weblite/sql'; 
+        const DATABASE_NAME = 'pizzanostra'; 
+        const MASTER_API_KEY = 'orgkey_96b7f2b07b3f3bb298870e5cc9d8f912cfc49715c5926616be2e43fbc2ea397c';
+
+        let TELEFONO_NEGOCIO = "";
+        let carrito = [];
+        let total = 0;
+        
+        let databaseCategories = [];
+        let databaseProducts = [];
+
+        // Función oficial para enviar sentencias SQL por Weblite REST API (Puerto 443 HTTPS Estándar)
+        async function runQuery(sql) {
+            // SQLite Cloud REST API exige el formato de Connection String en el header de autorización
+            const bearerTokenString = `sqlitecloud://czz5zqwydk.sqlite.cloud:8860/${DATABASE_NAME}.sqlite?apikey=${MASTER_API_KEY}`;
+
+            const response = await fetch(SQLITE_CLOUD_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${bearerTokenString}`,
+                    'Content-Type': 'text/plain', // SQLite Cloud espera recibir el SQL directo como texto plano
+                    'Accept': 'application/json'
+                },
+                body: sql
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || `Error en consulta REST: ${response.status}`);
+            }
+            
+            const res = await response.json();
+            // Weblite devuelve las filas dentro de la propiedad "data"
+            return res.data || res;
+        }
+
+        window.onload = async function() {
+            if(localStorage.getItem('delivery_nombre')) {
+                document.getElementById('nombre').value = localStorage.getItem('delivery_nombre');
+            }
+            if(localStorage.getItem('delivery_direccion')) {
+                document.getElementById('direccion').value = localStorage.getItem('delivery_direccion');
+            }
+
+            try {
+                await cargarConfiguracion();
+                await cargarMenu();
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loading-screen').innerHTML = `
+                    <div style="padding: 20px; text-align: center; max-width: 450px; margin: auto;">
+                        <p style="font-size: 1.4rem; margin-bottom: 10px;">⚠️ <strong>Error en SQLite Cloud</strong></p>
+                        <p style="color: #d63031; background: #fff0f0; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; word-break: break-all;">
+                            ${error.toString()}
+                        </p>
+                        <p style="font-size:0.85rem; color:#57606f; margin-top:15px;">Asegúrate de que tus tablas se hayan creado en el panel de SQLite Cloud y que tu internet no tenga problemas.</p>
+                    </div>
+                `;
+            }
+        };
+
+        async function cargarConfiguracion() {
+            const records = await runQuery('SELECT * FROM config ORDER BY id DESC LIMIT 1');
+            if (records && records.length > 0) {
+                const data = records[0];
+                TELEFONO_NEGOCIO = data.phone;
+                
+                document.title = data.name;
+                document.getElementById('biz-name').innerText = data.name;
+                document.getElementById('biz-status').innerText = data.status;
+                
+                const logoUrl = data.logo || "https://cdn-icons-png.flaticon.com/512/3595/3595455.png";
+                document.getElementById('biz-logo').src = logoUrl;
+
+                if (data.theme) {
+                    try {
+                        const theme = typeof data.theme === 'string' ? JSON.parse(data.theme) : data.theme;
+                        for (const [key, value] of Object.entries(theme)) {
+                            document.documentElement.style.setProperty(`--${key}`, value);
+                        }
+                        if(theme.primary) {
+                            document.getElementById('meta-theme-color').setAttribute('content', theme.primary);
+                        }
+                    } catch(e) { console.error("Error al parsear el JSON del tema visual", e); }
+                }
+
+                // Configuración dinámica del Manifiesto de PWA
+                const pwaManifest = {
+                    "short_name": data.name,
+                    "name": data.name,
+                    "description": `Delivery de ${data.name}`,
+                    "icons": [{ "src": logoUrl, "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }],
+                    "start_url": window.location.origin + window.location.pathname,
+                    "background_color": "#faf8f5",
+                    "theme_color": "#d63031",
+                    "display": "standalone",
+                    "orientation": "portrait"
+                };
+                const blob = new Blob([JSON.stringify(pwaManifest)], { type: 'application/json' });
+                document.getElementById('manifest-placeholder').setAttribute('href', URL.createObjectURL(blob));
+            }
+        }
+
+        async function cargarMenu() {
+            databaseCategories = await runQuery('SELECT * FROM categories ORDER BY "order" ASC');
+            databaseProducts = await runQuery('SELECT * FROM products');
+            renderizarMenuCompleto();
+        }
+
+        function renderizarMenuCompleto() {
+            if (databaseCategories.length === 0) return;
+
+            const navContainer = document.getElementById('dynamic-nav');
+            const menuContainer = document.getElementById('menu-container');
+
+            navContainer.innerHTML = "";
+            menuContainer.innerHTML = "";
+
+            databaseCategories.forEach(cat => {
+                navContainer.innerHTML += `
+                    <a href="#cat-${cat.id}" class="cat-btn">
+                        <span>${cat.icon}</span>${cat.name}
+                    </a>
+                `;
+
+                const productosFiltrados = databaseProducts.filter(p => p.category_id === cat.id);
+
+                if (productosFiltrados.length > 0) {
+                    menuContainer.innerHTML += `<h2 class="section-title" id="cat-${cat.id}">${cat.name}</h2>`;
+
+                    productosFiltrados.forEach(prod => {
+                        const cartItem = carrito.find(item => item.id === prod.id);
+                        const tieneUnidades = cartItem && cartItem.cantidad > 0;
+
+                        menuContainer.innerHTML += `
+                            <div class="menu-item" style="border-left: 6px solid ${cat.color || 'var(--primary)'}">
+                                <div class="item-info">
+                                    <div class="item-title-row">
+                                        <h3>${prod.name}</h3>
+                                        ${prod.badge ? `<span class="badge badge-hot">${prod.badge}</span>` : ''}
+                                    </div>
+                                    <p>${prod.description || ''}</p>
+                                    <span class="price">$${parseFloat(prod.price).toFixed(2)}</span>
+                                </div>
+                                <div class="item-actions">
+                                    <button class="btn-add-circle" id="btn-init-${prod.id}" 
+                                        style="display: ${tieneUnidades ? 'none' : 'flex'}" 
+                                        onclick="modificarDesdeMenu(${prod.id}, '${prod.name}', ${prod.price}, 'mas')">+</button>
+                                    
+                                    <div class="quantity-selector" id="selector-${prod.id}" 
+                                        style="display: ${tieneUnidades ? 'flex' : 'none'}">
+                                        <button onclick="modificarDesdeMenu(${prod.id}, '${prod.name}', ${prod.price}, 'menos')">-</button>
+                                        <span class="quantity-value" id="val-${prod.id}">${tieneUnidades ? cartItem.cantidad : 1}</span>
+                                        <button onclick="modificarDesdeMenu(${prod.id}, '${prod.name}', ${prod.price}, 'mas')">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            });
+
+            document.getElementById('loading-screen').style.display = 'none';
+        }
+
+        window.modificarDesdeMenu = function(id, producto, precio, accion) {
+            const existe = carrito.find(item => item.id === id);
+            const btnInit = document.getElementById(`btn-init-${id}`);
+            const selector = document.getElementById(`selector-${id}`);
+            const valSpan = document.getElementById(`val-${id}`);
+
+            if (accion === 'mas') {
+                if (existe) {
+                    existe.cantidad++;
+                    if(valSpan) valSpan.innerText = existe.cantidad;
+                } else {
+                    carrito.push({ id, producto, precio, cantidad: 1 });
+                    if(btnInit) btnInit.style.display = 'none';
+                    if(selector) selector.style.display = 'flex';
+                    if(valSpan) valSpan.innerText = 1;
+                }
+            } else if (accion === 'menos') {
+                if (existe) {
+                    existe.cantidad--;
+                    if (existe.cantidad === 0) {
+                        carrito = carrito.filter(i => i.id !== id);
+                        if(selector) selector.style.display = 'none';
+                        if(btnInit) btnInit.style.display = 'flex';
+                    } else {
+                        if(valSpan) valSpan.innerText = existe.cantidad;
+                    }
+                }
+            }
+            actualizarInterfazCarrito();
+        };
+
+        window.cambiarCantidad = function(id, accion) {
+            const item = carrito.find(item => item.id === id);
+            if (item) {
+                modificarDesdeMenu(id, item.producto, item.price || item.precio, accion);
+            }
+        };
+
+        function actualizarInterfazCarrito() {
+            const listaHTML = document.getElementById('lista-carrito');
+            const vacioTxt = document.getElementById('carrito-vacio');
+            const totalTxt = document.getElementById('total-pago');
+            
+            listaHTML.innerHTML = '';
+            total = 0;
+
+            if (carrito.length === 0) {
+                vacioTxt.style.display = 'block';
+                totalTxt.innerText = '0.00';
+                
+                databaseProducts.forEach(prod => {
+                    const btnInit = document.getElementById(`btn-init-${prod.id}`);
+                    const selector = document.getElementById(`selector-${prod.id}`);
+                    if(btnInit) btnInit.style.display = 'flex';
+                    if(selector) selector.style.display = 'none';
+                });
+                return;
+            }
+
+            vacioTxt.style.display = 'none';
+
+            carrito.forEach(item => {
+                const subtotal = item.precio * item.cantidad;
+                total += subtotal;
+
+                listaHTML.innerHTML += `
+                    <div class="cart-item">
+                        <div>
+                            <strong>${item.producto}</strong><br>
+                            <span style="color: var(--primary); font-size:0.9rem;">$${parseFloat(item.precio).toFixed(2)} c/u</span>
+                        </div>
+                        <div class="cart-item-controls">
+                            <button onclick="cambiarCantidad(${item.id}, 'menos')">-</button>
+                            <span style="margin: 0 10px; font-weight:bold;">${item.cantidad}</span>
+                            <button onclick="cambiarCantidad(${item.id}, 'mas')">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            totalTxt.innerText = total.toFixed(2);
+        }
+
+        const inputNombre = document.getElementById('nombre');
+        const inputDireccion = document.getElementById('direccion');
+
+        inputNombre.addEventListener('change', () => localStorage.setItem('delivery_nombre', inputNombre.value));
+        inputDireccion.addEventListener('change', () => localStorage.setItem('delivery_direccion', inputDireccion.value));
+
+        document.getElementById('form-pedido').addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (carrito.length === 0) {
+                alert("Agrega al menos un producto.");
+                return;
+            }
+
+            const nombre = inputNombre.value;
+            const direccion = inputDireccion.value;
+            const pago = document.getElementById('pago').value;
+            const notas = document.getElementById('notas').value || "Ninguna";
+            const nombreNegocio = document.getElementById('biz-name').innerText;
+
+            let mensaje = `🍕 *NUEVO PEDIDO - ${nombreNegocio.toUpperCase()}* 🍕\n\n`;
+            mensaje += `👤 *Cliente:* ${nombre}\n`;
+            mensaje += `📍 *Dirección:* ${direccion}\n`;
+            mensaje += `💳 *Método de Pago:* ${pago}\n`;
+            mensaje += `📝 *Notas:* ${notas}\n\n`;
+            mensaje += `🛒 *Detalle del Pedido:*\n`;
+
+            carrito.forEach(item => {
+                mensaje += `• ${item.cantidad}x ${item.producto} ($${(item.precio * item.cantidad).toFixed(2)})\n`;
+            });
+            mensaje += `\n💰 *TOTAL A PAGAR: $${total.toFixed(2)}*`;
+
+            window.location.replace(`https://wa.me/${TELEFONO_NEGOCIO}?text=${encodeURIComponent(mensaje)}`);
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js');
+            });
+        }
+    </script>
+</body>
+</html>
