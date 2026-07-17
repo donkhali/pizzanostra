@@ -179,8 +179,8 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN CENTRAL DE TU PROYECTO SQLITE CLOUD API V1
-        const SQLITE_CLOUD_URL = 'https://czz5zqwydk.sqlite.cloud/v1/sql';
+        // GESTIÓN CENTRAL DE TU PROYECTO WEBLITE API V2
+        const SQLITE_CLOUD_URL = 'https://czz5zqwydk.sqlite.cloud/v2/weblite/sql';
         const DATABASE_NAME = 'pizzanostra';
 
         let categories = [];
@@ -197,22 +197,22 @@
             return str.replace(/'/g, "''");
         }
 
-        // Función unificada utilizando payload estructurado en JSON (API V1)
+        // Función unificada utilizando texto plano sobre Weblite API V2
         async function runQuery(sql) {
             const adminKey = sessionStorage.getItem('sqlite_admin_key');
             if (!adminKey) throw new Error("No estás logueado.");
 
+            const bearerTokenString = `sqlitecloud://czz5zqwydk.sqlite.cloud:8860?apikey=${adminKey}`;
+            const sqlCompleto = `USE DATABASE ${DATABASE_NAME}; ${sql}`;
+
             const response = await fetch(SQLITE_CLOUD_URL, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${adminKey}`,
-                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${bearerTokenString}`,
+                    'Content-Type': 'text/plain',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({
-                    database: DATABASE_NAME,
-                    sql: sql
-                })
+                body: sqlCompleto
             });
 
             if (!response.ok) {
@@ -230,17 +230,17 @@
             const errBox = document.getElementById('login-error');
 
             try {
+                const bearerTokenString = `sqlitecloud://czz5zqwydk.sqlite.cloud:8860?apikey=${key}`;
+                const sqlCompleto = `USE DATABASE ${DATABASE_NAME}; SELECT 1;`;
+
                 const response = await fetch(SQLITE_CLOUD_URL, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${key}`,
-                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${bearerTokenString}`,
+                        'Content-Type': 'text/plain',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({
-                        database: DATABASE_NAME,
-                        sql: 'SELECT 1'
-                    })
+                    body: sqlCompleto
                 });
 
                 if (response.ok) {
