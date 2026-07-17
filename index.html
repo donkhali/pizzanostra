@@ -310,17 +310,17 @@
 
         // Función oficial para enviar sentencias SQL por Weblite REST API (Puerto 443 HTTPS Estándar)
         async function runQuery(sql) {
-            // SQLite Cloud REST API exige el formato de Connection String en el header de autorización
-            const bearerTokenString = `sqlitecloud://czz5zqwydk.sqlite.cloud:8860/${DATABASE_NAME}.sqlite?apikey=${MASTER_API_KEY}`;
+            const bearerTokenString = `sqlitecloud://czz5zqwydk.sqlite.cloud:8860?apikey=${MASTER_API_KEY}`;
+            const sqlCompleto = `USE DATABASE ${DATABASE_NAME}; ${sql}`;
 
             const response = await fetch(SQLITE_CLOUD_URL, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${bearerTokenString}`,
-                    'Content-Type': 'text/plain', // SQLite Cloud espera recibir el SQL directo como texto plano
+                    'Content-Type': 'text/plain', 
                     'Accept': 'application/json'
                 },
-                body: sql
+                body: sqlCompleto
             });
 
             if (!response.ok) {
@@ -329,7 +329,6 @@
             }
             
             const res = await response.json();
-            // Weblite devuelve las filas dentro de la propiedad "data"
             return res.data || res;
         }
 
@@ -561,14 +560,14 @@
             const nombre = inputNombre.value;
             const direccion = inputDireccion.value;
             const pago = document.getElementById('pago').value;
-            const notas = document.getElementById('notas').value || "Ninguna";
+            const notes = document.getElementById('notas').value || "Ninguna";
             const nombreNegocio = document.getElementById('biz-name').innerText;
 
             let mensaje = `🍕 *NUEVO PEDIDO - ${nombreNegocio.toUpperCase()}* 🍕\n\n`;
             mensaje += `👤 *Cliente:* ${nombre}\n`;
             mensaje += `📍 *Dirección:* ${direccion}\n`;
             mensaje += `💳 *Método de Pago:* ${pago}\n`;
-            mensaje += `📝 *Notas:* ${notas}\n\n`;
+            mensaje += `📝 *Notas:* ${notes}\n\n`;
             mensaje += `🛒 *Detalle del Pedido:*\n`;
 
             carrito.forEach(item => {
