@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - White Label Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-active {
+            border-bottom-width: 2px;
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+    <!-- 1. PANTALLA DE LOGIN -->
+    <div id="login-screen" class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+            <div class="text-center mb-6">
+                <span class="text-4xl">🍕</span>
+                <h1 class="text-2xl font-bold mt-2">Pizza Nostra Admin</h1>
+                <p class="text-gray-500 text-sm mt-1">Ingresa con tu API Key de Administración</p>
+            </div>
+            
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">SQLite Cloud Admin API Key</label>
+                    <input type="password" id="login-key" required class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Inserta tu orgkey_ aquí">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold p-3.5 rounded-xl transition shadow-md">
+                    Autenticar Conexión ➔
+                </button>
+            </form>
+            <p id="login-error" class="text-red-500 text-sm text-center mt-4 hidden font-medium"></p>
+        </div>
+    </div>
+
+    <!-- 2. DASHBOARD PRINCIPAL -->
+    <div id="admin-dashboard" class="hidden">
+        <header class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow-md">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">⚙️</span>
+                <h1 class="text-lg font-bold">Pizza Nostra <span class="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full ml-1">SQLite Cloud Admin</span></h1>
+            </div>
+            <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-medium transition">
+                Cerrar Sesión
+            </button>
+        </header>
+
+        <nav class="bg-white border-b border-gray-200 flex justify-around">
+            <button onclick="switchTab('tab-config')" id="btn-tab-config" class="w-full py-4 text-center font-semibold text-gray-500 tab-active transition">⚙️ Ajustes</button>
+            <button onclick="switchTab('tab-categories')" id="btn-tab-categories" class="w-full py-4 text-center font-semibold text-gray-500 transition">📁 Categorías</button>
+            <button onclick="switchTab('tab-products')" id="btn-tab-products" class="w-full py-4 text-center font-semibold text-gray-500 transition">🍕 Productos</button>
+        </nav>
+
+        <main class="max-w-4xl mx-auto p-4 md:p-6">
+            
+            <!-- PESTAÑA A: CONFIGURACIÓN GENERAL -->
+            <section id="tab-config" class="space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">⚙️ Identidad y Contacto</h2>
+                    <form id="config-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">Nombre del Negocio</label>
+                                <input type="text" id="cfg-name" required class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">WhatsApp de Pedidos</label>
+                                <input type="text" id="cfg-phone" required class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">URL de Logo / Imagen</label>
+                            <input type="text" id="cfg-logo" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Estado de la Tienda</label>
+                            <select id="cfg-status" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none">
+                                <option value="🟢 ¡Horno encendido! - Tomando Pedidos">🟢 Abierto - Recibiendo Pedidos</option>
+                                <option value="🔴 Horno apagado - Cerrado por hoy">🔴 Cerrado - Fuera de Horario</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Colores del Tema (JSON)</label>
+                            <textarea id="cfg-theme" rows="6" required class="w-full p-3 border rounded-xl bg-gray-50 font-mono text-sm focus:outline-none"></textarea>
+                        </div>
+                        <button type="submit" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition shadow-md">
+                            💾 Guardar Ajustes Generales
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- PESTAÑA B: CATEGORÍAS -->
+            <section id="tab-categories" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">➕ Nueva Categoría</h2>
+                    <form id="category-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Nombre</label>
+                            <input type="text" id="cat-name" required placeholder="Ej. Pizzas Especiales" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Emoji / Icono</label>
+                            <input type="text" id="cat-icon" required placeholder="🍕" class="w-full p-3 border text-center rounded-xl bg-gray-50 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Color de Marca</label>
+                            <input type="color" id="cat-color" required value="#d63031" class="w-full h-12 p-1 border rounded-xl bg-gray-50 focus:outline-none">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3.5 rounded-xl font-bold transition shadow-md">
+                            Agregar
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4">📁 Categorías Creadas</h2>
+                    <div id="list-categories" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA C: PRODUCTOS -->
+            <section id="tab-products" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">➕ Nuevo Producto</h2>
+                    <form id="product-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-semibold mb-1">Nombre del Producto</label>
+                                <input type="text" id="prod-name" required placeholder="Ej. Pizza Napolitana" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">Precio ($ USD)</label>
+                                <input type="number" step="0.01" id="prod-price" required placeholder="12.50" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">Categoría</label>
+                                <select id="prod-category" required class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none"></select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">Etiqueta Destacada (Badge)</label>
+                                <input type="text" id="prod-badge" placeholder="Ej. 🔥 Popular" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Descripción / Ingredientes</label>
+                            <textarea id="prod-desc" rows="2" placeholder="Ingredientes..." class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none"></textarea>
+                        </div>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition shadow-md">
+                            Agregar al Menú
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4">🍕 Menú Activo</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-100 text-gray-400 text-sm font-semibold">
+                                    <th class="py-3">Producto</th>
+                                    <th class="py-3">Precio</th>
+                                    <th class="py-3 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-products" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN CENTRAL DE TU PROYECTO SQLITE CLOUD API V1
+        const SQLITE_CLOUD_URL = 'https://czz5zqwydk.sqlite.cloud/v1/sql';
+        const DATABASE_NAME = 'pizzanostra';
+
+        let categories = [];
+        let configRecord = null;
+
+        window.onload = function() {
+            if (sessionStorage.getItem('sqlite_admin_key')) {
+                showDashboard();
+            }
+        };
+
+        function escapeSql(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "''");
+        }
+
+        // Función unificada utilizando payload estructurado en JSON (API V1)
+        async function runQuery(sql) {
+            const adminKey = sessionStorage.getItem('sqlite_admin_key');
+            if (!adminKey) throw new Error("No estás logueado.");
+
+            const response = await fetch(SQLITE_CLOUD_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${adminKey}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    database: DATABASE_NAME,
+                    sql: sql
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || `Error HTTP: ${response.status}`);
+            }
+            const res = await response.json();
+            return res.data || res;
+        }
+
+        // --- GESTIÓN DE INGRESO ---
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const key = document.getElementById('login-key').value;
+            const errBox = document.getElementById('login-error');
+
+            try {
+                const response = await fetch(SQLITE_CLOUD_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        database: DATABASE_NAME,
+                        sql: 'SELECT 1'
+                    })
+                });
+
+                if (response.ok) {
+                    sessionStorage.setItem('sqlite_admin_key', key);
+                    errBox.classList.add('hidden');
+                    showDashboard();
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                errBox.innerText = "La API Key ingresada es inválida o no cuenta con permisos de acceso.";
+                errBox.classList.remove('hidden');
+            }
+        });
+
+        function logout() {
+            sessionStorage.removeItem('sqlite_admin_key');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('login-screen').classList.add('flex');
+        }
+
+        async function showDashboard() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('flex');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+            
+            await loadConfig();
+            await loadCategories();
+            await loadProducts();
+        }
+
+        function switchTab(tabId) {
+            ['tab-config', 'tab-categories', 'tab-products'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(`btn-${id}`).classList.remove('tab-active');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(`btn-${tabId}`).classList.add('tab-active');
+        }
+
+        // --- AJUSTES GENERALES ---
+        async function loadConfig() {
+            try {
+                const records = await runQuery('SELECT * FROM config ORDER BY id DESC LIMIT 1');
+                if (records && records.length > 0) {
+                    configRecord = records[0];
+                    document.getElementById('cfg-name').value = configRecord.name;
+                    document.getElementById('cfg-phone').value = configRecord.phone;
+                    document.getElementById('cfg-status').value = configRecord.status;
+                    document.getElementById('cfg-logo').value = configRecord.logo || "";
+                    document.getElementById('cfg-theme').value = configRecord.theme ? JSON.stringify(JSON.parse(configRecord.theme), null, 2) : "{}";
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('config-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            let themeString = document.getElementById('cfg-theme').value;
+            try {
+                JSON.parse(themeString);
+            } catch(jsonErr) {
+                alert("El tema visual debe ser un formato JSON válido.");
+                return;
+            }
+
+            const name = document.getElementById('cfg-name').value;
+            const phone = document.getElementById('cfg-phone').value;
+            const status = document.getElementById('cfg-status').value;
+            const logo = document.getElementById('cfg-logo').value;
+
+            try {
+                if (configRecord) {
+                    const sql = `UPDATE config SET name = '${escapeSql(name)}', phone = '${escapeSql(phone)}', status = '${escapeSql(status)}', logo = '${escapeSql(logo)}', theme = '${escapeSql(themeString)}' WHERE id = ${configRecord.id}`;
+                    await runQuery(sql);
+                    alert("Ajustes guardados con éxito! 🚀");
+                } else {
+                    const sql = `INSERT INTO config (name, phone, status, logo, theme) VALUES ('${escapeSql(name)}', '${escapeSql(phone)}', '${escapeSql(status)}', '${escapeSql(logo)}', '${escapeSql(themeString)}')`;
+                    await runQuery(sql);
+                    alert("Ajustes creados correctamente! 🚀");
+                }
+                await loadConfig();
+            } catch (err) {
+                alert("Error al actualizar la configuración: " + err.message);
+            }
+        });
+
+        // --- CATEGORÍAS ---
+        async function loadCategories() {
+            try {
+                categories = await runQuery('SELECT * FROM categories ORDER BY "order" ASC');
+                const listContainer = document.getElementById('list-categories');
+                const selectDropdown = document.getElementById('prod-category');
+
+                listContainer.innerHTML = "";
+                selectDropdown.innerHTML = '<option value="" disabled selected>Selecciona una categoría</option>';
+
+                categories.forEach(cat => {
+                    listContainer.innerHTML += `
+                        <div class="flex items-center justify-between p-3 border rounded-xl bg-gray-50 hover:bg-gray-100 transition">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xl">${cat.icon}</span>
+                                <span class="font-bold text-gray-700">${cat.name}</span>
+                                <span class="text-xs px-2 py-0.5 rounded-full text-white" style="background-color: ${cat.color || '#3b82f6'}">${cat.color || '#3b82f6'}</span>
+                                <span class="text-xs text-gray-400 font-semibold">Orden: ${cat.order}</span>
+                            </div>
+                            <button onclick="deleteCategory(${cat.id})" class="text-red-500 hover:text-red-700 text-sm font-semibold p-2">
+                                Eliminar
+                            </button>
+                        </div>
+                    `;
+                    selectDropdown.innerHTML += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('category-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('cat-name').value;
+            const icon = document.getElementById('cat-icon').value;
+            const color = document.getElementById('cat-color').value;
+            const order = categories.length + 1;
+
+            try {
+                const sql = `INSERT INTO categories (name, icon, color, "order") VALUES ('${escapeSql(name)}', '${escapeSql(icon)}', '${escapeSql(color)}', ${order})`;
+                await runQuery(sql);
+                document.getElementById('cat-name').value = "";
+                document.getElementById('cat-icon').value = "";
+                await loadCategories();
+            } catch (err) {
+                alert("Error al crear categoría: " + err.message);
+            }
+        });
+
+        async function deleteCategory(id) {
+            if (confirm("¿Estás seguro de eliminar esta categoría? Los platos vinculados se mantendrán pero quedarán huérfanos de sección.")) {
+                try {
+                    await runQuery(`DELETE FROM categories WHERE id = ${id}`);
+                    await loadCategories();
+                } catch (err) {
+                    alert("Error al borrar: " + err.message);
+                }
+            }
+        }
+
+        // --- PRODUCTOS ---
+        async function loadProducts() {
+            try {
+                const products = await runQuery(`
+                    SELECT products.*, categories.name AS cat_name, categories.icon AS cat_icon 
+                    FROM products 
+                    LEFT JOIN categories ON products.category_id = categories.id
+                `);
+                
+                const listContainer = document.getElementById('list-products');
+                listContainer.innerHTML = "";
+
+                products.forEach(prod => {
+                    const catLabel = prod.cat_name ? `${prod.cat_icon} ${prod.cat_name}` : "Sin categoría";
+                    listContainer.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="py-4 pr-3 text-left">
+                                <div class="font-bold text-slate-800 text-sm md:text-base">${prod.name}</div>
+                                <div class="text-xs text-gray-400 font-medium">${catLabel}</div>
+                            </td>
+                            <td class="py-4 font-bold text-blue-600">$${parseFloat(prod.price).toFixed(2)}</td>
+                            <td class="py-4 text-right">
+                                <button onclick="deleteProduct(${prod.id})" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    Quitar
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('prod-name').value;
+            const price = parseFloat(document.getElementById('prod-price').value);
+            const categoryId = parseInt(document.getElementById('prod-category').value);
+            const badge = document.getElementById('prod-badge').value;
+            const description = document.getElementById('prod-desc').value;
+
+            try {
+                const sql = `INSERT INTO products (name, price, category_id, badge, description) VALUES ('${escapeSql(name)}', ${price}, ${categoryId}, '${escapeSql(badge)}', '${escapeSql(description)}')`;
+                await runQuery(sql);
+                
+                document.getElementById('prod-name').value = "";
+                document.getElementById('prod-price').value = "";
+                document.getElementById('prod-category').selectedIndex = 0;
+                document.getElementById('prod-badge').value = "";
+                document.getElementById('prod-desc').value = "";
+                
+                await loadProducts();
+            } catch (err) {
+                alert("Error al añadir producto: " + err.message);
+            }
+        });
+
+        async function deleteProduct(id) {
+            if (confirm("¿Seguro que deseas remover este producto de la carta?")) {
+                try {
+                    await runQuery(`DELETE FROM products WHERE id = ${id}`);
+                    await loadProducts();
+                } catch (err) {
+                    alert("Error al eliminar producto: " + err.message);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
