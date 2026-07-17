@@ -296,8 +296,8 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN OFICIAL DE SQLITE CLOUD WEBLITE
-        const SQLITE_CLOUD_URL = 'https://czz5zqwydk.sqlite.cloud/v2/weblite/sql'; 
+        // CONFIGURACIÓN OFICIAL SQLITE CLOUD API V1 (Puerto 443 HTTPS Estándar)
+        const SQLITE_CLOUD_URL = 'https://czz5zqwydk.sqlite.cloud/v1/sql'; 
         const DATABASE_NAME = 'pizzanostra'; 
         const MASTER_API_KEY = 'orgkey_96b7f2b07b3f3bb298870e5cc9d8f912cfc49715c5926616be2e43fbc2ea397c';
 
@@ -308,19 +308,19 @@
         let databaseCategories = [];
         let databaseProducts = [];
 
-        // Función oficial para enviar sentencias SQL por Weblite REST API (Puerto 443 HTTPS Estándar)
+        // Función centralizada para peticiones JSON a la API V1
         async function runQuery(sql) {
-            const bearerTokenString = `sqlitecloud://czz5zqwydk.sqlite.cloud:8860?apikey=${MASTER_API_KEY}`;
-            const sqlCompleto = `USE DATABASE ${DATABASE_NAME}; ${sql}`;
-
             const response = await fetch(SQLITE_CLOUD_URL, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${bearerTokenString}`,
-                    'Content-Type': 'text/plain', 
+                    'Authorization': `Bearer ${MASTER_API_KEY}`,
+                    'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: sqlCompleto
+                body: JSON.stringify({
+                    database: DATABASE_NAME,
+                    sql: sql
+                })
             });
 
             if (!response.ok) {
@@ -351,7 +351,7 @@
                         <p style="color: #d63031; background: #fff0f0; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; word-break: break-all;">
                             ${error.toString()}
                         </p>
-                        <p style="font-size:0.85rem; color:#57606f; margin-top:15px;">Asegúrate de que tus tablas se hayan creado en el panel de SQLite Cloud y que tu internet no tenga problemas.</p>
+                        <p style="font-size:0.85rem; color:#57606f; margin-top:15px;">Verifica que las tablas existan en tu panel de control y que la API Key sea correcta.</p>
                     </div>
                 `;
             }
@@ -382,7 +382,6 @@
                     } catch(e) { console.error("Error al parsear el JSON del tema visual", e); }
                 }
 
-                // Configuración dinámica del Manifiesto de PWA
                 const pwaManifest = {
                     "short_name": data.name,
                     "name": data.name,
