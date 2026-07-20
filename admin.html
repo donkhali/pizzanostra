@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control - White Label Admin</title>
+    <title>Panel de Control - Pizza Nostra Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SDK Oficial de PocketBase -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.1/pocketbase.umd.js"></script>
     <style>
         .tab-active {
             border-bottom-width: 2px;
@@ -21,13 +23,17 @@
             <div class="text-center mb-6">
                 <span class="text-4xl">🍕</span>
                 <h1 class="text-2xl font-bold mt-2">Pizza Nostra Admin</h1>
-                <p class="text-gray-500 text-sm mt-1">Ingresa con tu API Key de Administración</p>
+                <p class="text-gray-500 text-sm mt-1">Ingresa con tus credenciales de PocketBase</p>
             </div>
             
             <form id="login-form" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-semibold mb-1">SQLite Cloud Admin API Key</label>
-                    <input type="password" id="login-key" required class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Inserta tu orgkey_ aquí">
+                    <label class="block text-sm font-semibold mb-1">Correo Electrónico</label>
+                    <input type="email" id="login-email" required class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="admin@ejemplo.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Contraseña</label>
+                    <input type="password" id="login-password" required class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••">
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold p-3.5 rounded-xl transition shadow-md">
                     Autenticar Conexión ➔
@@ -42,7 +48,7 @@
         <header class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow-md">
             <div class="flex items-center gap-3">
                 <span class="text-2xl">⚙️</span>
-                <h1 class="text-lg font-bold">Pizza Nostra <span class="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full ml-1">SQLite Cloud Admin</span></h1>
+                <h1 class="text-lg font-bold">Pizza Nostra <span class="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full ml-1">PocketBase Cloud</span></h1>
             </div>
             <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-medium transition">
                 Cerrar Sesión
@@ -179,85 +185,38 @@
     </div>
 
     <script>
-        // GESTIÓN CENTRAL DE TU PROYECTO WEBLITE API V2
-        const SQLITE_CLOUD_URL = 'https://czz5zqwydk.sqlite.cloud/v2/weblite/sql';
-        const DATABASE_NAME = 'pizzanostra';
+        // CONEXIÓN DIRECTA A TU INSTANCIA DE POCKETBASE
+        const pb = new PocketBase('https://pocketbase-a7bk.onrender.com');
 
         let categories = [];
         let configRecord = null;
 
         window.onload = function() {
-            if (sessionStorage.getItem('sqlite_admin_key')) {
+            if (pb.authStore.isValid) {
                 showDashboard();
             }
         };
 
-        function escapeSql(str) {
-            if (!str) return '';
-            return str.replace(/'/g, "''");
-        }
-
-        // Función unificada utilizando texto plano sobre Weblite API V2
-        async function runQuery(sql) {
-            const adminKey = sessionStorage.getItem('sqlite_admin_key');
-            if (!adminKey) throw new Error("No estás logueado.");
-
-            const bearerTokenString = `sqlitecloud://czz5zqwydk.sqlite.cloud:8860?apikey=${adminKey}`;
-            const sqlCompleto = `USE DATABASE ${DATABASE_NAME}; ${sql}`;
-
-            const response = await fetch(SQLITE_CLOUD_URL, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${bearerTokenString}`,
-                    'Content-Type': 'text/plain',
-                    'Accept': 'application/json'
-                },
-                body: sqlCompleto
-            });
-
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.message || `Error HTTP: ${response.status}`);
-            }
-            const res = await response.json();
-            return res.data || res;
-        }
-
         // --- GESTIÓN DE INGRESO ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const key = document.getElementById('login-key').value;
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
             const errBox = document.getElementById('login-error');
 
             try {
-                const bearerTokenString = `sqlitecloud://czz5zqwydk.sqlite.cloud:8860?apikey=${key}`;
-                const sqlCompleto = `USE DATABASE ${DATABASE_NAME}; SELECT 1;`;
-
-                const response = await fetch(SQLITE_CLOUD_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${bearerTokenString}`,
-                        'Content-Type': 'text/plain',
-                        'Accept': 'application/json'
-                    },
-                    body: sqlCompleto
-                });
-
-                if (response.ok) {
-                    sessionStorage.setItem('sqlite_admin_key', key);
-                    errBox.classList.add('hidden');
-                    showDashboard();
-                } else {
-                    throw new Error();
-                }
+                // Autenticación nativa de PocketBase
+                await pb.admins.authWithPassword(email, password);
+                errBox.classList.add('hidden');
+                showDashboard();
             } catch (err) {
-                errBox.innerText = "La API Key ingresada es inválida o no cuenta con permisos de acceso.";
+                errBox.innerText = "Credenciales inválidas o sin permisos de acceso.";
                 errBox.classList.remove('hidden');
             }
         });
 
         function logout() {
-            sessionStorage.removeItem('sqlite_admin_key');
+            pb.authStore.clear();
             document.getElementById('admin-dashboard').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('login-screen').classList.add('flex');
@@ -285,17 +244,20 @@
         // --- AJUSTES GENERALES ---
         async function loadConfig() {
             try {
-                const records = await runQuery('SELECT * FROM config ORDER BY id DESC LIMIT 1');
+                const records = await pb.collection('config').getFullList({
+                    sort: '-created',
+                });
+                
                 if (records && records.length > 0) {
                     configRecord = records[0];
                     document.getElementById('cfg-name').value = configRecord.name;
                     document.getElementById('cfg-phone').value = configRecord.phone;
                     document.getElementById('cfg-status').value = configRecord.status;
                     document.getElementById('cfg-logo').value = configRecord.logo || "";
-                    document.getElementById('cfg-theme').value = configRecord.theme ? JSON.stringify(JSON.parse(configRecord.theme), null, 2) : "{}";
+                    document.getElementById('cfg-theme').value = configRecord.theme ? JSON.stringify(typeof configRecord.theme === 'string' ? JSON.parse(configRecord.theme) : configRecord.theme, null, 2) : "{}";
                 }
             } catch (err) {
-                console.error(err);
+                console.error("Error al cargar configuración:", err);
             }
         }
 
@@ -303,26 +265,28 @@
             e.preventDefault();
             
             let themeString = document.getElementById('cfg-theme').value;
+            let themeObj;
             try {
-                JSON.parse(themeString);
+                themeObj = JSON.parse(themeString);
             } catch(jsonErr) {
                 alert("El tema visual debe ser un formato JSON válido.");
                 return;
             }
 
-            const name = document.getElementById('cfg-name').value;
-            const phone = document.getElementById('cfg-phone').value;
-            const status = document.getElementById('cfg-status').value;
-            const logo = document.getElementById('cfg-logo').value;
+            const data = {
+                name: document.getElementById('cfg-name').value,
+                phone: document.getElementById('cfg-phone').value,
+                status: document.getElementById('cfg-status').value,
+                logo: document.getElementById('cfg-logo').value,
+                theme: themeObj
+            };
 
             try {
                 if (configRecord) {
-                    const sql = `UPDATE config SET name = '${escapeSql(name)}', phone = '${escapeSql(phone)}', status = '${escapeSql(status)}', logo = '${escapeSql(logo)}', theme = '${escapeSql(themeString)}' WHERE id = ${configRecord.id}`;
-                    await runQuery(sql);
+                    await pb.collection('config').update(configRecord.id, data);
                     alert("Ajustes guardados con éxito! 🚀");
                 } else {
-                    const sql = `INSERT INTO config (name, phone, status, logo, theme) VALUES ('${escapeSql(name)}', '${escapeSql(phone)}', '${escapeSql(status)}', '${escapeSql(logo)}', '${escapeSql(themeString)}')`;
-                    await runQuery(sql);
+                    await pb.collection('config').create(data);
                     alert("Ajustes creados correctamente! 🚀");
                 }
                 await loadConfig();
@@ -334,7 +298,10 @@
         // --- CATEGORÍAS ---
         async function loadCategories() {
             try {
-                categories = await runQuery('SELECT * FROM categories ORDER BY "order" ASC');
+                categories = await pb.collection('categories').getFullList({
+                    sort: 'order',
+                });
+                
                 const listContainer = document.getElementById('list-categories');
                 const selectDropdown = document.getElementById('prod-category');
 
@@ -350,7 +317,7 @@
                                 <span class="text-xs px-2 py-0.5 rounded-full text-white" style="background-color: ${cat.color || '#3b82f6'}">${cat.color || '#3b82f6'}</span>
                                 <span class="text-xs text-gray-400 font-semibold">Orden: ${cat.order}</span>
                             </div>
-                            <button onclick="deleteCategory(${cat.id})" class="text-red-500 hover:text-red-700 text-sm font-semibold p-2">
+                            <button onclick="deleteCategory('${cat.id}')" class="text-red-500 hover:text-red-700 text-sm font-semibold p-2">
                                 Eliminar
                             </button>
                         </div>
@@ -358,20 +325,22 @@
                     selectDropdown.innerHTML += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
                 });
             } catch (err) {
-                console.error(err);
+                console.error("Error al cargar categorías:", err);
             }
         }
 
         document.getElementById('category-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('cat-name').value;
-            const icon = document.getElementById('cat-icon').value;
-            const color = document.getElementById('cat-color').value;
-            const order = categories.length + 1;
+            
+            const data = {
+                name: document.getElementById('cat-name').value,
+                icon: document.getElementById('cat-icon').value,
+                color: document.getElementById('cat-color').value,
+                order: categories.length + 1
+            };
 
             try {
-                const sql = `INSERT INTO categories (name, icon, color, "order") VALUES ('${escapeSql(name)}', '${escapeSql(icon)}', '${escapeSql(color)}', ${order})`;
-                await runQuery(sql);
+                await pb.collection('categories').create(data);
                 document.getElementById('cat-name').value = "";
                 document.getElementById('cat-icon').value = "";
                 await loadCategories();
@@ -383,7 +352,7 @@
         async function deleteCategory(id) {
             if (confirm("¿Estás seguro de eliminar esta categoría? Los platos vinculados se mantendrán pero quedarán huérfanos de sección.")) {
                 try {
-                    await runQuery(`DELETE FROM categories WHERE id = ${id}`);
+                    await pb.collection('categories').delete(id);
                     await loadCategories();
                 } catch (err) {
                     alert("Error al borrar: " + err.message);
@@ -394,17 +363,18 @@
         // --- PRODUCTOS ---
         async function loadProducts() {
             try {
-                const products = await runQuery(`
-                    SELECT products.*, categories.name AS cat_name, categories.icon AS cat_icon 
-                    FROM products 
-                    LEFT JOIN categories ON products.category_id = categories.id
-                `);
+                const products = await pb.collection('products').getFullList({
+                    expand: 'category_id'
+                });
                 
                 const listContainer = document.getElementById('list-products');
                 listContainer.innerHTML = "";
 
                 products.forEach(prod => {
-                    const catLabel = prod.cat_name ? `${prod.cat_icon} ${prod.cat_name}` : "Sin categoría";
+                    const catName = prod.expand?.category_id?.name;
+                    const catIcon = prod.expand?.category_id?.icon;
+                    const catLabel = catName ? `${catIcon} ${catName}` : "Sin categoría";
+                    
                     listContainer.innerHTML += `
                         <tr class="hover:bg-gray-50 transition">
                             <td class="py-4 pr-3 text-left">
@@ -413,7 +383,7 @@
                             </td>
                             <td class="py-4 font-bold text-blue-600">$${parseFloat(prod.price).toFixed(2)}</td>
                             <td class="py-4 text-right">
-                                <button onclick="deleteProduct(${prod.id})" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                <button onclick="deleteProduct('${prod.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
                                     Quitar
                                 </button>
                             </td>
@@ -421,21 +391,23 @@
                     `;
                 });
             } catch (err) {
-                console.error(err);
+                console.error("Error al cargar productos:", err);
             }
         }
 
         document.getElementById('product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('prod-name').value;
-            const price = parseFloat(document.getElementById('prod-price').value);
-            const categoryId = parseInt(document.getElementById('prod-category').value);
-            const badge = document.getElementById('prod-badge').value;
-            const description = document.getElementById('prod-desc').value;
+
+            const data = {
+                name: document.getElementById('prod-name').value,
+                price: parseFloat(document.getElementById('prod-price').value),
+                category_id: document.getElementById('prod-category').value,
+                badge: document.getElementById('prod-badge').value,
+                description: document.getElementById('prod-desc').value
+            };
 
             try {
-                const sql = `INSERT INTO products (name, price, category_id, badge, description) VALUES ('${escapeSql(name)}', ${price}, ${categoryId}, '${escapeSql(badge)}', '${escapeSql(description)}')`;
-                await runQuery(sql);
+                await pb.collection('products').create(data);
                 
                 document.getElementById('prod-name').value = "";
                 document.getElementById('prod-price').value = "";
@@ -452,7 +424,7 @@
         async function deleteProduct(id) {
             if (confirm("¿Seguro que deseas remover este producto de la carta?")) {
                 try {
-                    await runQuery(`DELETE FROM products WHERE id = ${id}`);
+                    await pb.collection('products').delete(id);
                     await loadProducts();
                 } catch (err) {
                     alert("Error al eliminar producto: " + err.message);

@@ -9,6 +9,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" id="meta-theme-color" content="#d63031">
     <link id="manifest-placeholder" rel="manifest">
+    
+    <!-- SDK Oficial de PocketBase -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.1/pocketbase.umd.js"></script>
 
     <style>
         :root {
@@ -296,8 +299,8 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN DE TU ENDPOINT REAL EN LA NUBE (EDGE FUNCTION)
-        const EDGE_FUNCTION_URL = 'https://czz5zqwydk.g1.gateway.sqlite.cloud/v2/functions/get_public_menu'; 
+        // CONEXIÓN DIRECTA A POCKETBASE CLOUD EN RENDER
+        const pb = new PocketBase('https://pocketbase-a7bk.onrender.com');
 
         let TELEFONO_NEGOCIO = "";
         let carrito = [];
@@ -306,7 +309,6 @@
         let databaseCategories = [];
         let databaseProducts = [];
 
-        // Al iniciar la aplicación, disparamos una única petición HTTP GET al endpoint seguro
         window.onload = async function() {
             if(localStorage.getItem('delivery_nombre')) {
                 document.getElementById('nombre').value = localStorage.getItem('delivery_nombre');
@@ -316,57 +318,71 @@
             }
 
             try {
-                const response = await fetch(EDGE_FUNCTION_URL, { method: 'GET' });
-                if (!response.ok) throw new Error(`Fallo en la comunicación con el Gateway: ${response.status}`);
-                
-                const resJson = await response.json();
-                if (!resJson.success) throw new Error(resJson.error);
-
-                const paqueteData = resJson.data;
-                
-                // 1. Desempaquetar y Procesar Configuración Corporativa
-                if (paqueteData.config) {
-                    const data = paqueteData.config;
-                    TELEFONO_NEGOCIO = data.phone;
-                    document.title = data.name;
-                    document.getElementById('biz-name').innerText = data.name;
-                    document.getElementById('biz-status').innerText = data.status;
-                    
-                    const logoUrl = data.logo || "https://cdn-icons-png.flaticon.com/512/3595/3595455.png";
-                    document.getElementById('biz-logo').src = logoUrl;
-
-                    if (data.theme) {
-                        try {
-                            const theme = typeof data.theme === 'string' ? JSON.parse(data.theme) : data.theme;
-                            for (const [key, value] of Object.entries(theme)) {
-                                document.documentElement.style.setProperty(`--${key}`, value);
-                            }
-                            if(theme.primary) {
-                                document.getElementById('meta-theme-color').setAttribute('content', theme.primary);
-                            }
-                        } catch(e) { console.error("Error al procesar el mapeo del tema visual", e); }
-                    }
-                }
-
-                // 2. Mapear Categorías y Productos a Variables Globales
-                databaseCategories = paqueteData.categories || [];
-                databaseProducts = paqueteData.products || [];
-                
-                renderizarMenuCompleto();
-
+                await cargarConfiguracion();
+                await cargarMenu();
             } catch (error) {
                 console.error(error);
                 document.getElementById('loading-screen').innerHTML = `
                     <div style="padding: 20px; text-align: center; max-width: 450px; margin: auto;">
-                        <p style="font-size: 1.4rem; margin-bottom: 10px;">⚠️ <strong>Error en la Carga del Menú</strong></p>
+                        <p style="font-size: 1.4rem; margin-bottom: 10px;">⚠️ <strong>Error en PocketBase Cloud</strong></p>
                         <p style="color: #d63031; background: #fff0f0; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; word-break: break-all;">
                             ${error.toString()}
                         </p>
-                        <p style="font-size:0.85rem; color:#57606f; margin-top:15px;">La Edge Function de SQLite Cloud no respondió de manera satisfactoria. Revisa los logs en tu panel de control.</p>
+                        <p style="font-size:0.85rem; color:#57606f; margin-top:15px;">Asegúrate de que tus colecciones tengan abiertos sus permisos públicos en API Rules.</p>
                     </div>
                 `;
             }
         };
+
+        async function cargarConfiguracion() {
+            const records = await pb.collection('config').getFullList({
+                sort: '-created'
+            });
+
+            if (records && records.length > 0) {
+                const data = records[0];
+                TELEFONO_NEGOCIO = data.phone;
+                
+                document.title = data.name;
+                document.getElementById('biz-name').innerText = data.name;
+                document.getElementById('biz-status').innerText = data.status;
+                
+                const logoUrl = data.logo || "https://cdn-icons-png.flaticon.com/512/3595/3595455.png";
+                document.getElementById('biz-logo').src = logoUrl;
+
+                if (data.theme) {
+                    try {
+                        const theme = typeof data.theme === 'string' ? JSON.parse(data.theme) : data.theme;
+                        for (const [key, value] of Object.entries(theme)) {
+                            document.documentElement.style.setProperty(`--${key}`, value);
+                        }
+                        if(theme.primary) {
+                            document.getElementById('meta-theme-color').setAttribute('content', theme.primary);
+                        }
+                    } catch(e) { console.error("Error al parsear el JSON del tema visual", e); }
+                }
+
+                const pwaManifest = {
+                    "short_name": data.name,
+                    "name": data.name,
+                    "description": `Delivery de ${data.name}`,
+                    "icons": [{ "src": logoUrl, "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }],
+                    "start_url": window.location.origin + window.location.pathname,
+                    "background_color": "#faf8f5",
+                    "theme_color": "#d63031",
+                    "display": "standalone",
+                    "orientation": "portrait"
+                };
+                const blob = new Blob([JSON.stringify(pwaManifest)], { type: 'application/json' });
+                document.getElementById('manifest-placeholder').setAttribute('href', URL.createObjectURL(blob));
+            }
+        }
+
+        async function cargarMenu() {
+            databaseCategories = await pb.collection('categories').getFullList({ sort: 'order' });
+            databaseProducts = await pb.collection('products').getFullList();
+            renderizarMenuCompleto();
+        }
 
         function renderizarMenuCompleto() {
             if (databaseCategories.length === 0) return;
@@ -406,13 +422,13 @@
                                 <div class="item-actions">
                                     <button class="btn-add-circle" id="btn-init-${prod.id}" 
                                         style="display: ${tieneUnidades ? 'none' : 'flex'}" 
-                                        onclick="modificarDesdeMenu(${prod.id}, '${prod.name}', ${prod.price}, 'mas')">+</button>
+                                        onclick="modificarDesdeMenu('${prod.id}', '${prod.name}', ${prod.price}, 'mas')">+</button>
                                     
                                     <div class="quantity-selector" id="selector-${prod.id}" 
                                         style="display: ${tieneUnidades ? 'flex' : 'none'}">
-                                        <button onclick="modificarDesdeMenu(${prod.id}, '${prod.name}', ${prod.price}, 'menos')">-</button>
+                                        <button onclick="modificarDesdeMenu('${prod.id}', '${prod.name}', ${prod.price}, 'menos')">-</button>
                                         <span class="quantity-value" id="val-${prod.id}">${tieneUnidades ? cartItem.cantidad : 1}</span>
-                                        <button onclick="modificarDesdeMenu(${prod.id}, '${prod.name}', ${prod.price}, 'mas')">+</button>
+                                        <button onclick="modificarDesdeMenu('${prod.id}', '${prod.name}', ${prod.price}, 'mas')">+</button>
                                     </div>
                                 </div>
                             </div>
@@ -496,9 +512,9 @@
                             <span style="color: var(--primary); font-size:0.9rem;">$${parseFloat(item.precio).toFixed(2)} c/u</span>
                         </div>
                         <div class="cart-item-controls">
-                            <button onclick="cambiarCantidad(${item.id}, 'menos')">-</button>
+                            <button onclick="cambiarCantidad('${item.id}', 'menos')">-</button>
                             <span style="margin: 0 10px; font-weight:bold;">${item.cantidad}</span>
-                            <button onclick="cambiarCantidad(${item.id}, 'mas')">+</button>
+                            <button onclick="cambiarCantidad('${item.id}', 'mas')">+</button>
                         </div>
                     </div>
                 `;

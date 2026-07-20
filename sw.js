@@ -1,52 +1,48 @@
-const CACHE_NAME = 'pizza-nostra-cache-v1';
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './admin.html'
-];
+const CACHE_NAME = 'white-label-delivery-v1';
 
-// Instalación del Service Worker y almacenamiento de assets locales
+// 1. Instalar el Service Worker y tomar el control de inmediato
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
-  self.skipWaiting();
+    self.skipWaiting();
 });
 
-// Activación y limpieza de cachés antiguas
+// 2. Limpiar cachés antiguas al actualizar la aplicación
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cache => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
+    event.waitUntil(
+        caches.keys().then(keys => {
+            return Promise.all(
+                keys.map(key => {
+                    if (key !== CACHE_NAME) {
+                        return caches.delete(key);
+                    }
+                })
+            );
         })
-      );
-    })
-  );
-  self.clients.claim();
+    );
 });
 
-// Intercepción de peticiones inteligentes
+// 3. Estrategia: Network-First (Intentar red primero, si falla usar caché)
+// Es ideal para delivery porque necesitamos que el stock y precios estén siempre al día.
 self.addEventListener('fetch', event => {
-  // 🔥 REGLA DE ORO: Si la petición NO es un GET (como el POST de SQLite Cloud) 
-  // o si va hacia un servidor externo de base de datos, NO la interceptes.
-  // Déjala pasar directo a internet sin tocarla.
-  if (event.request.method !== 'GET' || event.request.url.includes('sqlite.cloud')) {
-    return; // Al salir con return, la petición sigue su curso normal por la red
-  }
+    // IMPORTANTE: No interceptamos las peticiones API de PocketBase para no romper el tiempo real
+    if (event.request.url.includes('pocketbase-a7bk.onrender.com')) {
+        return;
+    }
 
-  // Manejo normal de caché para los archivos locales de la app
-  event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request);
-    })
-  );
+    event.respondWith(
+        fetch(event.request)
+            .then(response => {
+                // Si la respuesta es exitosa, guardamos una copia en caché
+                if (response.status === 200) {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
+                }
+                return response;
+            })
+            .catch(() => {
+                // Si no hay conexión a internet, servimos el archivo guardado en caché
+                return caches.match(event.request);
+            })
+    );
 });
