@@ -10,8 +10,8 @@
     <meta name="theme-color" id="meta-theme-color" content="#d63031">
     <link id="manifest-placeholder" rel="manifest">
     
-    <!-- SDK Oficial de PocketBase -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.1/pocketbase.umd.js"></script>
+    <!-- SDK Oficial Global de PocketBase -->
+    <script src="https://cdn.jsdelivr.net/gh/pocketbase/js-sdk@master/dist/pocketbase.umd.js"></script>
 
     <style>
         :root {
@@ -299,7 +299,6 @@
     </div>
 
     <script>
-        // CONEXIÓN DIRECTA A POCKETBASE CLOUD EN RENDER
         const pb = new PocketBase('https://pocketbase-a7bk.onrender.com');
 
         let TELEFONO_NEGOCIO = "";
@@ -557,7 +556,8 @@
             window.location.replace(`https://wa.me/${TELEFONO_NEGOCIO}?text=${encodeURIComponent(mensaje)}`);
         });
 
-        if ('serviceWorker' in navigator) {
+        // CORRECCIÓN PROTEGIDA PARA LOCALHOST Y PROD
+        if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js');
             });
