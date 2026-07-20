@@ -23,7 +23,7 @@
             <div class="text-center mb-6">
                 <span class="text-4xl">🍕</span>
                 <h1 class="text-2xl font-bold mt-2">Pizza Nostra Admin</h1>
-                <p class="text-gray-500 text-sm mt-1">Ingresa con tus credenciales de PocketBase</p>
+                <p class="text-gray-500 text-sm mt-1">Ingresa con tus credenciales de Usuario Manager</p>
             </div>
             
             <form id="login-form" class="space-y-4">
@@ -192,8 +192,12 @@
         let configRecord = null;
 
         window.onload = function() {
-            if (pb.authStore.isValid) {
+            // Verifica si hay una sesión válida del usuario de la colección
+            if (pb.authStore.isValid && pb.authStore.model && !pb.authStore.isAdmin) {
                 showDashboard();
+            } else {
+                // Si había quedado una sesión rota o de administrador global, se limpia para forzar el flujo correcto
+                pb.authStore.clear();
             }
         };
 
@@ -205,8 +209,8 @@
             const errBox = document.getElementById('login-error');
 
             try {
-                // Autenticación nativa de PocketBase
-                await pb.admins.authWithPassword(email, password);
+                // Autenticación usando la colección de usuarios común en lugar de la global de admin
+                await pb.collection('users').authWithPassword(email, password);
                 errBox.classList.add('hidden');
                 showDashboard();
             } catch (err) {
